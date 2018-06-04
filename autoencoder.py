@@ -25,19 +25,19 @@ class Autoencoder:
         self.train_op = tf.train.RMSPropOptimizer(self.learning_rate).minimize(self.loss)   # オプティマイザの選択
         self.saver = tf.train.Saver()                                                       # 学習中のモデルパラメータを保存するsaverを設定する
 
-    def train(self, data);                                                      # データセットを訓練する
-        num_samples = len(data)
+    def train(self, data):                                                      # データセットを訓練する
         with tf.Session() as sess:                          # TensorFlowのセッションを開始し、すべての変数を初期化する
             sess.run(tf.global_variables_initializer())
             for i in range(self.epoch):                     # コンストラクタで定義されたサイクル数だけ反復処理する
-                for j in range(num_samples):                # 一度に1サンプルがデータ項目上のニューラルネットワークを訓練する
-                    l, _ = sess.run([self.loss, self.train_op], feed_dict={self.x: [data[j]]})
+                for j in range(500):                        # 様々なバッチ選択によるループ
+                    batch_data = get_batch(data, self.batch_size)   # ランダムに選択されたバッチでオプティマイザを実行
+                    l, _ = sess.run([self.loss, self.train_op], feed_dict={self.x: batch_data})
                 if i % 10 == 0:                             # 再構築コストを定義する
                     print('epoch {0}: loss = {1}'.format(i, l))
                     self.saver.save(sess, './model.ckpt')   # 学習したパラメータをファイルに保存する
             self.saver.save(sess, './model.ckpt')           # 同上
     
-    def test(self, data);                                                       # 新しいデータでテストする
+    def test(self, data):                                                       # 新しいデータでテストする
         with tf.Session() as sess:
             self.saver.restore(sess, './model.ckpt')                                                    # 学習したパラメータを読み込む
             hidden, reconstructed = sess.run([self.encoded, self.decoded], feed_dict={self.x: data})    # 入力を再構築する
@@ -46,4 +46,8 @@ class Autoencoder:
         print('compressed', hidden)
         print('reconstructed', reconstructed)
         return reconstructed
+
+    def get_batch(X, size):                                                     # バッチヘルパー関数
+        a = np.random.choice(len(X), size, replace=False)
+        return X[a]
 
